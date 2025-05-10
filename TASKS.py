@@ -1,7 +1,7 @@
 import random
 
 def clear_equation(formula: str):
-    return formula.replace('+ -', '-').replace('.1x', '.11x').replace(' 1x', 'x').replace('+ 0x', '').replace('+ 0', '').replace(' ' , '')
+    return formula.replace('+ -', '-').replace('.1x', '.1 1x').replace(' 1x', 'x').replace('+ 0x', '').replace('+ 0', '').replace(' ' , '')
 
 
 def generate_linear_equation(difficulty):
