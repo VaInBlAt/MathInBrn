@@ -1,5 +1,3 @@
-#МОЯ ВЕРСИЯ
-
 from aiogram import Router, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -17,14 +15,15 @@ router = Router()
 class States(StatesGroup):
     current_difficulty: Optional[int] = State()
     current_theme: Optional[str] = State()
-    current_answer: Optional[int] = State()
-    current_user_answer: Optional[int] = State()
+    current_answer: Optional[str] = State()
+    current_formula: Optional[str] = State()
+    current_user_answer: Optional[str] = State()
     current_time_start: Optional[float] = State()
-    current_test_time: Optional[int] = State()
     current_test: Optional[list] = State()
-    current_test_task: Optional[int] = State()
+    current_test_task_index: Optional[int] = State()
     current_count: Optional[int] = State()
-    
+    current_test_time: Optional[int] = State()
+    is_testing: Optional[bool] = State()
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -32,14 +31,13 @@ async def cmd_start(message: types.Message):
         "Добро пожаловать! Выберите тему:",
         reply_markup=MainMenu.to_choo_theme_kb()
     )
-    
 
 @router.callback_query(F.data.startswith('choo_theme_'))
 async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
     theme = callback.data.split('_')[-1]
     await state.update_data(current_theme=theme)
     await callback.message.edit_text(
-        f"Выбрана тема {theme}\nВыберите сложность:\nимя {callback.from_user.first_name} id {callback.from_user.id}" ,
+        f"Выбрана тема {theme}\nВыберите сложность:",
         reply_markup=MainMenu.to_choo_diff_kb()
     )
     await callback.answer()
@@ -58,155 +56,127 @@ async def handle_diff(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith('begin'))
 async def begin(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    difficulty = data['current_difficulty']
     theme = data['current_theme']
+    difficulty = data['current_difficulty']
     start = time()
-    await state.update_data(current_time_start=start)   
 
     match theme:
         case 'line':
-            formula, answer = generate_linear_equation(int(difficulty))
+            formula, answer = generate_linear_equation(difficulty)
         case 'quadratic':
-            formula, answer = generate_quadratic_equation(int(difficulty))
+            formula, answer = generate_quadratic_equation(difficulty)
         case 'proportion':
-            formula, answer = generate_proportion_equation(int(difficulty))
-        
-    await state.update_data(current_answer=answer)   
+            formula, answer = generate_proportion_equation(difficulty)
+        case _:
+            await callback.answer("Неизвестная тема")
+            return
+
+    await state.update_data(
+        current_time_start=start,
+        current_answer=str(answer),
+        current_formula=formula,
+        current_user_answer="",
+        is_testing=False
+    )
+    
     image = await generate_formula_image(formula)
-    
-    if isinstance(answer, tuple):
-        # Для квадратных уравнений берем один из корней (меньший)
-        correct_root = min(answer)
-        answers = [
-            str(int(correct_root/2)),
-            str(int(correct_root+2)),
-            str(correct_root),
-            str(int(correct_root*2))
-        ]
-    else:
-        # Для линейных уравнений
-        answers = [
-            str(int(answer/2)),
-            str(int(answer+2)),
-            str(answer),
-            str(int(answer*2))
-        ]
-    
-    shuffle(answers)
-            
-    caption = f"Решите уравнение:\n{formula}\nЕсли корней несколько, выпишите меньший из них"
     await callback.message.answer_photo(
         photo=image,
-        caption=caption,
-        reply_markup=MainMenu.answers_kb(*answers)
+        caption="ОТВЕТ: ...",
+        reply_markup=MainMenu.num_board_kb()
     )
     await callback.message.delete()
     await callback.answer()
 
-@router.callback_query(F.data.startswith('user_answer_'))
-async def handle_answer(callback: types.CallbackQuery, state: FSMContext): 
-    user_answer = int(callback.data.split('_')[-1])
+@router.callback_query(F.data.startswith('num_'))
+async def handle_number_input(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    end = time()
-    timer = int(end - data.get('current_time_start'))
-    correct_answer = data.get('current_answer')
+    current_answer = data['current_answer']
+    current_user_answer = data['current_user_answer']
+    formula = data['current_formula']
+    start_time = data['current_time_start']
+    is_testing = data['is_testing']
+    pressed_button = callback.data.split('_')[-1]
 
-    if type(correct_answer) == tuple:
-        text = f"❌ Неверно за {timer}с! Правильный ответ: {min(correct_answer)}"
-        if int(user_answer) == int(min(correct_answer)):
-            text = f"✅ Верно! За {timer}с"
-            if data.get('current_test'):
-                count = data.get('current_count')
-                count += 1
-                await state.update_data(current_count=count)
-        if data.get('current_test'):
-            test_time = data.get('current_test_time')
-            test_time += timer
-            await state.update_data(current_test_time=test_time)
-    elif type(correct_answer) == int:
-        text = f"❌ Неверно за {timer}с! Правильный ответ: {correct_answer}"
-        if int(user_answer) == int(correct_answer):
-            text = f"✅ Верно! За {timer}с"
-            if data.get('current_test'):
-                count = data.get('current_count')
-                count += 1
-                await state.update_data(current_count=count)
-        if data.get('current_test'):
-            test_time = data.get('current_test_time')
-            test_time += timer
-            await state.update_data(current_test_time=test_time)
-        
-    if data.get('current_test'):     
-        await callback.message.answer(text, reply_markup=MainMenu.to_continue_test_kb())
+    # Обработка специальных кнопок
+    if pressed_button == 'del':
+        current_user_answer = current_user_answer[:-1]
+    elif pressed_button == 'clear':
+        current_user_answer = ""
     else:
-        await callback.message.answer(text, reply_markup=MainMenu.to_continue_kb())
-    await callback.answer()
+        current_user_answer += pressed_button
 
-@router.callback_query(F.data.startswith('exit'))
-async def handle_exit(callback: types.CallbackQuery): 
-    await callback.message.edit_text(
-        "Добро пожаловать! Выберите тему:",
-        reply_markup=MainMenu.to_choo_theme_kb()
-    )
+    await state.update_data(current_user_answer=current_user_answer)
+    display_answer = current_user_answer.ljust(len(current_answer), '.')
+
+    # Формируем заголовок
+    caption = f"{formula}\n\nОТВЕТ: {display_answer}"
+    if is_testing:
+        test_task = data['current_test_task_index']
+        caption = f"Вопрос {test_task+1}/10\n{caption}"
+
+    # Проверка завершения ввода
+    if len(current_user_answer) == len(current_answer):
+        end = time()
+        timer = int(end - start_time)
+        is_correct = current_user_answer == current_answer
+        
+        # Обновление статистики теста
+        if is_testing:
+            count = data['current_count']
+            test_time = data['current_test_time']
+            if is_correct:
+                count += 1
+                test_time += timer
+            else:
+                test_time += timer
+            await state.update_data(
+                current_count=count,
+                current_test_time=test_time
+            )
+
+        # Формирование результата
+        result_text = (f"✅ Верно! За {timer}с" if is_correct 
+                       else f"❌ Неверно! За {timer}с\nПравильный ответ: {current_answer}")
+        
+        # Обновление сообщения
+        await callback.message.edit_caption(
+            caption=f"{formula}\n\n{result_text}",
+            reply_markup=MainMenu.to_continue_test_kb() if is_testing else MainMenu.to_continue_kb()
+        )
+    else:
+        # Обновление текущего ввода
+        await callback.message.edit_caption(
+            caption=caption,
+            reply_markup=MainMenu.num_board_kb()
+        )
+    
     await callback.answer()
 
 @router.callback_query(F.data.startswith('generate_test'))
-async def handle_test(callback: types.CallbackQuery, state: FSMContext): 
+async def handle_test(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     theme = data['current_theme']
-
-    await state.update_data(current_count=0, current_test_time=0)
-    
     test = []
-    if theme == 'line':
-        test = [
-            generate_linear_equation(1),
-            generate_linear_equation(1),
-            generate_linear_equation(1),
-            generate_linear_equation(2),
-            generate_linear_equation(2),
-            generate_linear_equation(2),
-            generate_linear_equation(3),
-            generate_linear_equation(3),
-            generate_linear_equation(3),
-            generate_linear_equation(3)
-        ]
-    elif theme == 'quadratic':
-        # Равномерно распределяем сложности для квадратных уравнений
-        test = [
-            generate_quadratic_equation(1),
-            generate_quadratic_equation(1),
-            generate_quadratic_equation(1),
-            generate_quadratic_equation(2),
-            generate_quadratic_equation(2),
-            generate_quadratic_equation(2),
-            generate_quadratic_equation(3),
-            generate_quadratic_equation(3),
-            generate_quadratic_equation(3),
-            generate_quadratic_equation(3)
-        ]
-    
-    elif theme == 'proportion':
-        # Равномерно распределяем сложности для квадратных уравнений
-        test = [
-            generate_proportion_equation(1),
-            generate_proportion_equation(1),
-            generate_proportion_equation(1),
-            generate_proportion_equation(2),
-            generate_proportion_equation(2),
-            generate_proportion_equation(2),
-            generate_proportion_equation(3),
-            generate_proportion_equation(3),
-            generate_proportion_equation(3),
-            generate_proportion_equation(3)
-        ]
-    
-    
 
-    await state.update_data(current_test=test, current_test_task=0)
+    # Генерация тестовых вопросов
+    for _ in range(3):  # 3 легких вопроса
+        test.append(generate_equation(theme, 1))
+    for _ in range(4):  # 4 средних вопроса
+        test.append(generate_equation(theme, 2))
+    for _ in range(3):  # 3 сложных вопроса
+        test.append(generate_equation(theme, 3))
 
+    await state.update_data(
+        current_test=test,
+        current_test_task_index=0,
+        current_count=0,
+        current_test_time=0,
+        is_testing=True
+    )
+    
     await callback.message.edit_text(
-        f"Выбран тест на тему {theme}",
+        f"Тест по теме {theme} готов!",
         reply_markup=MainMenu.to_begin_test_kb()
     )
     await callback.answer()
@@ -214,166 +184,104 @@ async def handle_test(callback: types.CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith('test_'))
 async def begin_test(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    test = data.get('current_test', [])
-    
-    if not test:
-        await callback.message.answer("Тест не найден!")
-        return
-    
-    test_task = data.get('current_test_task', 0)
-    start = time()
-    await state.update_data(current_time_start=start)
+    test = data['current_test']
+    test_task = data['current_test_task_index']
 
-    try:
-        if test_task >= len(test):
-            # Тест завершен - подсчет результатов
-            correct_answers = data.get('current_count', 0)
-            total_time = data.get('current_test_time', 0)
-            
-            # Загружаем данные пользователей
-            users_data = load_json_data()
-            user_id = str(callback.from_user.id)
-            
-            # Если пользователя нет в базе - создаем
-            if user_id not in users_data["users"]:
-                users_data["users"][user_id] = {
-                    "username": callback.from_user.first_name,
-                    "score": 0
-                }
-            
-            # Вычисляем очки за тест (20 за правильный, -60 за неправильный)
-            test_score = (correct_answers * 20) - ((10 - correct_answers) * 60)
-            users_data["users"][user_id]["score"] += test_score
-            
-            # Сохраняем обновленные данные
-            save_json_data(users_data)
-            
-            await state.update_data(current_test=[], current_test_task=0)
-            await callback.message.answer(
-                "Тест завершен! 🎉\n" \
-                f"Результат: {correct_answers}/10 за {total_time} секунд.\n" \
-                f"Начислено очков: {test_score}\n" \
-                f"Текущий счет: {users_data['users'][user_id]['score']}\n\n" \
-                f"{await send_leaderboard(callback)}",
-                reply_markup=MainMenu.to_choo_theme_kb()
-            )
-            return
-            
-        formula, answer = test[test_task]
-        await state.update_data(current_answer=answer)
+    if test_task >= len(test):
+        # Завершение теста
+        users_data = load_json_data()
+        user_id = str(callback.from_user.id)
+        score = (data['current_count'] * 20) - ((10 - data['current_count']) * 40)
         
-        image = await generate_formula_image(formula)
-        
-        if isinstance(answer, tuple):
-            correct_root1, correct_root2 = answer
-            answers = [
-                str(correct_root1),
-                str(correct_root2),
-                str(correct_root1 + random.randint(1, 3)),
-                str(correct_root2 - random.randint(1, 3))
-            ]
-        else:
-            answers = [
-                str(int(answer / 2)),
-                str(int(answer + 2)),
-                str(answer),
-                str(int(answer * 2))
-            ]
-        shuffle(answers)
-        
-        caption = f"Решите уравнение {test_task+1}/10:\n{formula}\nЕсли корней несколько, выпишите меньший из них"
-        await callback.message.answer_photo(
-            photo=image,
-            caption=caption,
-            reply_markup=MainMenu.answers_kb(*answers)
-        )
-        
-        await state.update_data(current_test_task=test_task + 1)
-        
-    except Exception as e:
-        await callback.message.answer(
-            f"Произошла ошибка: {str(e)}",
-            reply_markup=MainMenu.to_choo_diff_kb()
-        )
-    
-    await callback.answer()
-
-
-@router.callback_query(F.data.startswith('user_answer_'))
-async def handle_answer(callback: types.CallbackQuery, state: FSMContext): 
-    user_answer = int(callback.data.split('_')[-1])
-    data = await state.get_data()
-    end = time()
-    timer = int(end - data.get('current_time_start'))
-    correct_answer = data.get('current_answer')
-
-    # Загружаем данные пользователей
-    users_data = load_json_data()
-    user_id = str(callback.from_user.id)
-    
-    # Если пользователя нет в базе - создаем
-    if user_id not in users_data["users"]:
+        # Обновление данных пользователя
         users_data["users"][user_id] = {
             "username": callback.from_user.first_name,
-            "score": 0
+            "score": users_data["users"].get(user_id, {"score": 0})["score"] + score
         }
+        save_json_data(users_data)
 
-    if type(correct_answer) == tuple:
-        text = f"❌ Неверно за {timer}с! Правильный ответ: {min(correct_answer)}"
-        if int(user_answer) == int(min(correct_answer)):
-            text = f"✅ Верно! За {timer}с"
-            if data.get('current_test'):
-                count = data.get('current_count', 0)
-                count += 1
-                await state.update_data(current_count=count)
-                
-                # Начисляем 20 очков за правильный ответ в тесте
-                users_data["users"][user_id]["score"] += 20
-        else:
-            if data.get('current_test'):
-                # Вычитаем 60 очков за неправильный ответ в тесте
-                users_data["users"][user_id]["score"] -= 60
-                
-        if data.get('current_test'):
-            test_time = data.get('current_test_time', 0)
-            test_time += timer
-            await state.update_data(current_test_time=test_time)
-            
-    elif type(correct_answer) == int:
-        text = f"❌ Неверно за {timer}с! Правильный ответ: {correct_answer}"
-        if int(user_answer) == int(correct_answer):
-            text = f"✅ Верно! За {timer}с"
-            if data.get('current_test'):
-                count = data.get('current_count', 0)
-                count += 1
-                await state.update_data(current_count=count)
-                
-                # Начисляем 20 очков за правильный ответ в тесте
-                users_data["users"][user_id]["score"] += 20
-        else:
-            if data.get('current_test'):
-                # Вычитаем 60 очков за неправильный ответ в тесте
-                users_data["users"][user_id]["score"] -= 60
-                
-        if data.get('current_test'):
-            test_time = data.get('current_test_time', 0)
-            test_time += timer
-            await state.update_data(current_test_time=test_time)
-    
-    # Сохраняем обновленные данные
-    save_json_data(users_data)
+        # Формирование результатов
+        result_text = (
+            f"Тест завершен!\n"
+            f"Правильных ответов: {data['current_count']}/10\n"
+            f"Общее время: {data['current_test_time']}с\n"
+            f"Начислено очков: {score}"
+        )
         
-    if data.get('current_test'):     
-        await callback.message.answer(text, reply_markup=MainMenu.to_continue_test_kb())
-    else:
-        await callback.message.answer(text, reply_markup=MainMenu.to_continue_kb())
+        await callback.message.answer(
+            result_text,
+            reply_markup=MainMenu.to_choo_theme_kb()
+        )
+        await state.clear()
+        return
+
+    # Загрузка текущего вопроса
+    formula, answer = test[test_task]
+    await state.update_data(
+        current_answer=str(answer),
+        current_formula=formula,
+        current_user_answer="",
+        current_time_start=time()
+    )
+    
+    image = await generate_formula_image(formula)
+    await callback.message.answer_photo(
+        photo=image,
+        caption=f"Вопрос {test_task+1}/10\nОТВЕТ: ...",
+        reply_markup=MainMenu.num_board_kb()
+    )
+    await state.update_data(current_test_task_index=test_task + 1)
     await callback.answer()
 
-    
+@router.callback_query(F.data.startswith('continue'))
+async def continue_mode(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    if data.get('is_testing'):
+        await begin_test(callback, state)
+    else:
+        await begin(callback, state)
+    await callback.answer()
+
+@router.callback_query(F.data.startswith('exit'))
+async def handle_exit(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.delete()  # Удаляем старое сообщение
+    await callback.message.answer(  # Отправляем новое сообщение
+        "Главное меню:",
+        reply_markup=MainMenu.to_choo_theme_kb()
+    )
+    await callback.answer()
+
 @router.callback_query(F.data.startswith('top'))
-async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
-    await callback.message.edit_text(
-        f"{await send_leaderboard(callback)}",
+async def show_leaderboard(callback: types.CallbackQuery):
+    leaderboard = await send_leaderboard(callback)
+    await callback.message.delete()  # Удаляем старое сообщение
+    await callback.message.answer(  # Отправляем новое сообщение
+        leaderboard,
         reply_markup=MainMenu.to_exit_kb()
     )
     await callback.answer()
+
+async def send_leaderboard(callback: types.CallbackQuery) -> str:
+    users_data = load_json_data()
+    sorted_users = sorted(
+        users_data["users"].values(),
+        key=lambda x: x["score"],
+        reverse=True
+    )[:10]
+    
+    leaderboard = "🏆 Топ игроков:\n"
+    for i, user in enumerate(sorted_users, 1):
+        leaderboard += f"{i}. {user['username']}: {user['score']} очков\n"
+    
+    return leaderboard
+
+def generate_equation(theme: str, difficulty: int) -> tuple:
+    match theme:
+        case 'line': 
+            return generate_linear_equation(difficulty)
+        case 'quadratic':
+            return generate_quadratic_equation(difficulty)
+        case 'proportion':
+            return generate_proportion_equation(difficulty)
+    raise ValueError("Неизвестная тема")
