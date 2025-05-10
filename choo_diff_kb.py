@@ -45,15 +45,24 @@ class MainMenu:
  
     
     @staticmethod
-    def answers_kb(first, second, third, fourth) -> InlineKeyboardMarkup:
+    def num_board_kb() -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
             buttons={
-                first: 'user_answer_' + str(first),
-                second: 'user_answer_' + str(second),
-                third: 'user_answer_ ' + str(third),
-                fourth: 'user_answer_' + str(fourth)
+                '1': 'num_1',
+                '2': 'num_2',
+                '3': 'num_3',
+                '4': 'num_4',
+                '5': 'num_5',
+                '6': 'num_6',
+                '7': 'num_7',
+                '8': 'num_8',
+                '9': 'num_9',
+                '-': 'num_-',
+                '0': 'num_0',
+                '.': 'num_.',
+                
             },
-            row_widths=[2, 2, 1])
+            row_widths=[3, 3, 3, 3])
 
     
 
