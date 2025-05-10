@@ -1,26 +1,27 @@
 import random
 
 def clear_equation(formula: str):
-    return formula.replace('+ -', '-').replace('.1x', '.11x').replace('1x', 'x').replace('+0x', '').replace('+0', '').replace(' ' , '')
+    return formula.replace('+ -', '-').replace('.1x', '.11x').replace(' 1x', 'x').replace('+ 0x', '').replace('+ 0', '').replace(' ' , '')
+
 
 def generate_linear_equation(difficulty):
-    a = random.randint(-5, 5)
-    while a == 0:
-        a = random.randint(-5, 5)
-    
-    b = random.randint(-10, 10)
-    x = random.randint(1, 10)
+    first_difficulty = list(range(-10, -1)) + list(range(2, 10))
+    second_difficulty = list(range(-20, -10)) + list(range(11, 20))
+    third_difficulty = [num + random.randint(1, 9) / 10 for num in first_difficulty]
+
+    x = random.choice(first_difficulty)
     
     match difficulty:
         case 1:
-            pass  
+            a = random.choice(first_difficulty)
+            b = random.choice(first_difficulty)
         case 2:
-            a = random.randint(-13, 13)
-            b = random.randint(-25, 25)
+            a = random.choice(second_difficulty)
+            b = random.choice(second_difficulty)
         case 3:
-            a = random.randint(-8, 8) + random.randint(2, 9)/10
-            b = random.randint(-15, 15) + random.randint(2, 9)/10
-    
+            a = random.choice(third_difficulty)
+            b = random.choice(third_difficulty)
+
     answer = a * x + b
     if difficulty not in [1, 2]:
         answer = round(answer, 2)
@@ -33,58 +34,46 @@ def generate_linear_equation(difficulty):
 
 
 def generate_quadratic_equation(difficulty):
-    x1 = random.randint(-5, 5)
-    x2 = random.randint(-5, 5)
+    first_difficulty = list(range(-5, -1)) + list(range(2, 6))
+    second_difficulty = list(range(-10, -5)) + list(range(5, 11))
+    third_difficulty = first_difficulty
 
-    while x2 == 0:
-        x2 = random.randint(-5, 5)
+    mult = 1
 
     match difficulty:
         case 1:
-            pass  
+            x1 = random.choice(first_difficulty)
+            x2 = random.choice(first_difficulty)  
         case 2:
-            x1 = random.randint(-10, 10)
-            x2 = random.randint(-10, 10)
-
-            while x1 == 0 or (5 >= x1 >= -5):
-                x1 = random.randint(-10, 10)
-            while x2 == 0 or (5 >= x2 >= -5):
-                x2 = random.randint(-10, 10)
-
+            x1 = random.choice(second_difficulty)
+            x2 = random.choice(second_difficulty)
         case 3:
-            x1 = random.randint(-15, 15)
-            x2 = random.randint(-15, 15)
+            mult = random.choice([2, 3, 5, 7, 11])
+            x1 = random.choice(third_difficulty)
+            x2 = random.choice(third_difficulty) 
 
-            while x1 == 0 or (10 >= x1 >= -10):
-                x1 = random.randint(-15, 15)
-            while x2 == 0 or (10 >= x2 >= -10):
-                x2 = random.randint(-15, 15)
-
-    equation = f" x^2 + {-1*(x1+x2)}x+ {x1*x2} = 0 "
+    equation = rf" {mult}x^2 + {-1*mult*(x1+x2)}x+ {mult*x1*x2} = 0"
+    print(equation, mult, x1, x2)
     return (clear_equation(equation), (x1, x2))
 
 
 def generate_proportion_equation(difficulty):
-    a = random.randint(-10, 10)
-    while a == 0 or a == -1 or a == 1:
-        a = random.randint(-10, 10)
-    
-    mult = random.randint(-10, 10)
-    x = random.randint(2, 15)
-    
+    first_difficulty = list(range(6, 21))
+    second_difficulty = list(range(20, 31))
+    third_difficulty = list(range(-30, -19)) + list(range(20, 31))
+
+    a = random.choice(first_difficulty)
+    x = random.choice(first_difficulty)
     match difficulty:
         case 1:
-            pass  
+            mult = random.choice(first_difficulty)
         case 2:
-            a = random.randint(-20, 20)
-            while a == 0 or a == -1 or a == 1:
-                a = random.randint(-20, 20)
+            mult = random.choice(second_difficulty)
         case 3:
-            a = random.randint(-8, 8) + random.randint(2, 9)/10
-    
-    if difficulty not in [1, 2]:
-        a = round(a, 2)
+            mult = random.choice(third_difficulty)
+             
     
     equation = rf" \frac{{{x}}}{{{a}}}=\frac{{x}}{{{round(a*mult, 2)}}}"
-    
-    return clear_equation(equation), round(x*mult, 2)
+
+    print(clear_equation(equation), round(x*mult, 2))
+    return (clear_equation(equation), round(x*mult, 2))
