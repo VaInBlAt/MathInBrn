@@ -54,7 +54,7 @@ def generate_quadratic_equation(difficulty):
 
     equation = rf" {mult}x^2 + {-1*mult*(x1+x2)}x+ {mult*x1*x2} = 0"
     print(equation, mult, x1, x2)
-    return (clear_equation(equation), (x1, x2))
+    return (clear_equation(equation), min(x1, x2))
 
 
 def generate_proportion_equation(difficulty):
@@ -77,3 +77,27 @@ def generate_proportion_equation(difficulty):
 
     print(clear_equation(equation), round(x*mult, 2))
     return (clear_equation(equation), round(x*mult, 2))
+
+
+def generate_powers_equation(difficulty):
+    first_difficulty = list(range(11, 20))
+    second_difficulty = list(range(21, 70))
+    third_difficulty = list(range(70, 100))
+    
+    match difficulty:
+        case 1:
+            x = random.choice(first_difficulty)
+        case 2:
+            x = random.choice(second_difficulty)
+            while x % 10 == 0:
+                x = random.choice(second_difficulty)
+        case 3:
+            x = random.choice(third_difficulty)
+            while x % 10 == 0:
+                x = random.choice(third_difficulty)
+
+    answer = x**2
+    
+    equation = f"{answer} = x^2"
+    
+    return clear_equation(equation), x
