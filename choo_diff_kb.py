@@ -7,12 +7,14 @@ class MainMenu:
     def to_choo_diff_kb() -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
             buttons={
+                '🏆 Рейтинг': 'top',
+                'Тест': 'generate_test',
                 "1": "choo_diff_1",
                 "2": "choo_diff_2",
                 "3": "choo_diff_3",
-                'Тест': 'generate_test'
+                'выход': 'exit'
             },
-            row_widths=[3])
+            row_widths=[2, 3, 1])
 
     
     @staticmethod
@@ -22,8 +24,7 @@ class MainMenu:
                 "линейные": "choo_theme_line",
                 "квадратные": "choo_theme_quadratic",
                 "пропорции": "choo_theme_proportion",
-                "функции": "choo_theme_function",
-                '🏆 Рейтинг игроков': 'top'
+                "степени": "choo_theme_powers",
             },
             row_widths=[2, 2])
     
