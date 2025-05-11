@@ -24,6 +24,7 @@ class States(StatesGroup):
     current_count: Optional[int] = State()
     current_test_time: Optional[int] = State()
     is_testing: Optional[bool] = State()
+    current_table: Optional[str] = State()
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -67,6 +68,9 @@ async def begin(callback: types.CallbackQuery, state: FSMContext):
             formula, answer = generate_quadratic_equation(difficulty)
         case 'proportion':
             formula, answer = generate_proportion_equation(difficulty)
+        case 'powers':
+            formula, answer = generate_powers_equation(difficulty)
+        
         case _:
             await callback.answer("Неизвестная тема")
             return
@@ -186,19 +190,22 @@ async def begin_test(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     test = data['current_test']
     test_task = data['current_test_task_index']
+    theme = data['current_theme']
 
     if test_task >= len(test):
         # Завершение теста
-        users_data = load_json_data()
+        users_data = load_json_data(theme)
         user_id = str(callback.from_user.id)
         score = (data['current_count'] * 20) - ((10 - data['current_count']) * 40)
         
-        # Обновление данных пользователя
-        users_data["users"][user_id] = {
-            "username": callback.from_user.first_name,
-            "score": users_data["users"].get(user_id, {"score": 0})["score"] + score
-        }
-        save_json_data(users_data)
+        if user_id not in users_data["users"]:
+            users_data["users"][user_id] = {
+                "username": callback.from_user.first_name,
+                "score": 0
+            }
+        
+        users_data["users"][user_id]["score"] += score
+        save_json_data(users_data, theme)
 
         # Формирование результатов
         result_text = (
@@ -253,17 +260,20 @@ async def handle_exit(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 @router.callback_query(F.data.startswith('top'))
-async def show_leaderboard(callback: types.CallbackQuery):
-    leaderboard = await send_leaderboard(callback)
-    await callback.message.delete()  # Удаляем старое сообщение
-    await callback.message.answer(  # Отправляем новое сообщение
-        leaderboard,
+async def show_leaderboard(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    theme = data.get('current_theme', 'general')
+    leaderboard = await send_leaderboard(theme, state)
+    
+    await callback.message.edit_text(
+        f"🏆 Рейтинг по теме '{theme}':\n\n{leaderboard}",
         reply_markup=MainMenu.to_exit_kb()
     )
     await callback.answer()
 
-async def send_leaderboard(callback: types.CallbackQuery) -> str:
-    users_data = load_json_data()
+async def send_leaderboard(callback: types.CallbackQuery, state: FSMContext) -> str:
+    data = await state.get_data()
+    users_data = load_json_data(data.get('current_theme'))
     sorted_users = sorted(
         users_data["users"].values(),
         key=lambda x: x["score"],
@@ -284,4 +294,7 @@ def generate_equation(theme: str, difficulty: int) -> tuple:
             return generate_quadratic_equation(difficulty)
         case 'proportion':
             return generate_proportion_equation(difficulty)
+        case 'powers':
+            return generate_powers_equation(difficulty)
+        
     raise ValueError("Неизвестная тема")
