@@ -176,7 +176,7 @@ async def handle_number_input(callback: types.CallbackQuery, state: FSMContext):
             )
 
         # Формирование результата
-        result_text = (f"✅ Верно! За {timer}с" if is_correct 
+        result_text = (f"✅ Верно За {timer}с" if is_correct 
                        else f"❌ Неверно! За {timer}с\nПравильный ответ: {current_answer}")
         
         # Обновление сообщения
