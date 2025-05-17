@@ -6,7 +6,6 @@ from keyboards.choo_diff_kb import MainMenu
 from TASKS import *
 from JSONfunctions import *
 from typing import Optional
-from random import shuffle
 from latexTEST import *
 from time import time
 
@@ -25,6 +24,7 @@ class States(StatesGroup):
     current_test_time: Optional[int] = State()
     is_testing: Optional[bool] = State()
     current_table: Optional[str] = State()
+    current_task: Optional[str] = State()
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -37,11 +37,41 @@ async def cmd_start(message: types.Message):
 async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
     theme = callback.data.split('_')[-1]
     await state.update_data(current_theme=theme)
-    await callback.message.edit_text(
+    if theme != 'OGE':
+        await callback.message.edit_text(
         f"Выбрана тема {theme}\nВыберите сложность:",
         reply_markup=MainMenu.to_choo_diff_kb()
     )
+    else:
+        await callback.message.edit_text(
+        f"Выберите задание",
+        reply_markup=MainMenu.to_choo_OGE_task_kb())
+
     await callback.answer()
+
+@router.callback_query(F.data.startswith('task_'))
+async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
+    task = callback.data.split('_')[-1]
+    await state.update_data(current_task=task)
+    if task != 'OGE':
+        await callback.message.edit_text(
+        f"Выбрано задание {task}\nВыберите вид:",
+        reply_markup=MainMenu.to_choo_OGE_kind_kb(task)
+    )
+    await callback.answer()
+
+@router.callback_query(F.data.startswith('kind_'))
+async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
+    task = callback.data.split('_')[-1]
+    await state.update_data(current_task=task)
+    if task != 'OGE':
+        await callback.message.edit_text(
+        f"Выбрано задание {task}",
+        reply_markup=MainMenu.to_begin_kb()
+    )
+    await callback.answer()
+
+
 
 @router.callback_query(F.data.startswith('choo_diff_'))
 async def handle_diff(callback: types.CallbackQuery, state: FSMContext): 
@@ -58,7 +88,10 @@ async def handle_diff(callback: types.CallbackQuery, state: FSMContext):
 async def begin(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     theme = data['current_theme']
-    difficulty = data['current_difficulty']
+    if not data.get('current_task'):
+        difficulty = data['current_difficulty']
+    else:
+        difficulty = data.get('current_task')
     start = time()
 
     match theme:
@@ -70,6 +103,9 @@ async def begin(callback: types.CallbackQuery, state: FSMContext):
             formula, answer = generate_proportion_equation(difficulty)
         case 'powers':
             formula, answer = generate_powers_equation(difficulty)
+        case 'OGE':
+            formula, answer = generate_OGE_equation(difficulty)
+            
         
         case _:
             await callback.answer("Неизвестная тема")
@@ -296,5 +332,8 @@ def generate_equation(theme: str, difficulty: int) -> tuple:
             return generate_proportion_equation(difficulty)
         case 'powers':
             return generate_powers_equation(difficulty)
+        case 'OGE':
+            return generate_OGE_equation(difficulty)
+        
         
     raise ValueError("Неизвестная тема")
