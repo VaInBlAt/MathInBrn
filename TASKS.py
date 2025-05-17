@@ -1,5 +1,7 @@
 import random
 
+from OGEtasks.task8 import *
+
 def clear_equation(formula: str):
     return formula.replace('+ -', '-').replace('.1x', '.1 1x').replace(' 1x', 'x').replace('+ 0x', '').replace('+ 0', '').replace(' ' , '')
 
@@ -101,3 +103,17 @@ def generate_powers_equation(difficulty):
     equation = f"{answer} = x^2"
     
     return clear_equation(equation), x
+
+def generate_OGE_equation(t: str):
+    task, kind = t.split('.')
+    print(f"Генерация задания: задача {task}, тип {kind}")
+
+    if task == '8' and kind == '1':
+        equation, answer = task_8_1()
+    elif task == '8' and kind == '2':
+        equation, answer = task_8_2()
+    else:
+        raise ValueError("Неизвестный тип задания")
+
+    return clear_equation(equation), str(answer)
+
