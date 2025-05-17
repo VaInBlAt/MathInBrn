@@ -25,9 +25,40 @@ class MainMenu:
                 "квадратные": "choo_theme_quadratic",
                 "пропорции": "choo_theme_proportion",
                 "степени": "choo_theme_powers",
+                "ОГЭ": "choo_theme_OGE"
             },
-            row_widths=[2, 2])
+            row_widths=[2, 2, 1])
     
+    @staticmethod
+    def to_choo_OGE_task_kb() -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                "6": "task_6",
+                "8": "task_8",
+                "9": "task_9",
+                "12": "task_12",
+                
+            },
+            row_widths=[2, 2,])
+    
+    @staticmethod
+    def to_choo_OGE_kind_kb(task: str) -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                task+'.1': 'kind_'+task+'.1',
+                task+'.2': 'kind_'+task+'.2',
+                task+'.3': 'kind_'+task+'.3',
+                task+'.4': 'kind_'+task+'.4',
+                task+'.5': 'kind_'+task+'.5',
+                task+'.6': 'kind_'+task+'.6', 
+                'выход': 'exit'
+            },
+            row_widths=[3, 3])
+    
+    
+    
+
+
     @staticmethod
     def to_begin_kb() -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
