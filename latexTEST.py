@@ -1,48 +1,59 @@
 from aiogram import types
-import requests
-from urllib.parse import quote
-from PIL import Image, ImageOps
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
 import io
+from PIL import Image
 
 async def generate_formula_image(formula: str, dpi: int = 600) -> types.BufferedInputFile:
-    """Генерация изображения формулы с вертикальными отступами"""
+    """Генерация изображения формулы с использованием Matplotlib"""
     try:
-        # Предварительная обработка формулы
-        formula = formula.strip()
-        formula = formula.replace(" ", r"\ ")
+        # Настройка Matplotlib
+        plt.switch_backend('agg')  # Режим без GUI
+        rcParams.update({
+            'text.usetex': False,    # Используем встроенный рендерер
+            'mathtext.fontset': 'cm',# Шрифт, похожий на LaTeX
+            'font.size': 180          # Размер шрифта
+        })
+
+        # Создаем фигуру с динамическим размером
+        fig = plt.figure(figsize=(8, 0.8))
+        ax = fig.add_subplot(111)
+        ax.axis('off')
         
-        # Формируем URL для CodeCogs LaTeX
-        base_url = f"https://latex.codecogs.com/png.latex?%5Cdpi%7B{dpi}%7D%5Cbg%7Bwhite%7D%5Cboxed%7B"
-        encoded_formula = quote(formula)
-        full_url = f"{base_url}{encoded_formula}%7D"
-        
-        # Загружаем изображение
-        response = requests.get(full_url, timeout=10)
-        response.raise_for_status()
-        
+        # Добавляем текст формулы
+        ax.text(0.5, 0.5, f'${formula}$', 
+               ha='center', 
+               va='center',
+               fontsize=75)
+
+        # Сохраняем в буфер с обрезкой пустого пространства
+        buf = io.BytesIO()
+        plt.savefig(buf, 
+                   format='png', 
+                   bbox_inches='tight', 
+                   pad_inches=0.3, 
+                   dpi=dpi)
+        plt.close(fig)
+        buf.seek(0)
+
         # Добавляем вертикальные отступы
-        img = Image.open(io.BytesIO(response.content))
+        img = Image.open(buf)
         original_width, original_height = img.size
+        new_height = int(original_height * 3.5)
         
-        # Вычисляем новую высоту (например, +50% к исходной)
-        new_height = int(original_height * 2.5)
-        
-        # Создаём новое изображение с белым фоном
         new_img = Image.new("RGB", (original_width, new_height), "white")
-        
-        # Вставляем оригинальное изображение по центру
         y_offset = (new_height - original_height) // 2
         new_img.paste(img, (0, y_offset))
-        
-        # Конвертируем обратно в байты
+
+        # Конвертируем в байты
         output_buffer = io.BytesIO()
         new_img.save(output_buffer, format="PNG")
         output_buffer.seek(0)
-        
+
         return types.BufferedInputFile(
             output_buffer.read(),
-            filename="formula_padded.png"
+            filename="formula.png"
         )
         
     except Exception as e:
-        raise ValueError(f"Ошибка генерации: {str(e)}")
+        raise ValueError(f"Ошибка генерации формулы: {str(e)}")
