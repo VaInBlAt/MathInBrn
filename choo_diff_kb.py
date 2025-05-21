@@ -12,9 +12,10 @@ class MainMenu:
                 "1": "choo_diff_1",
                 "2": "choo_diff_2",
                 "3": "choo_diff_3",
+                'ТЕОРИЯ': 'theory',
                 'выход': 'exit'
             },
-            row_widths=[2, 3, 1])
+            row_widths=[2, 3, 1, 1])
 
     
     @staticmethod
@@ -45,15 +46,12 @@ class MainMenu:
     def to_choo_OGE_kind_kb(task: str) -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
             buttons={
-                task+'.1': 'kind_'+task+'.1',
-                task+'.2': 'kind_'+task+'.2',
-                task+'.3': 'kind_'+task+'.3',
-                task+'.4': 'kind_'+task+'.4',
-                task+'.5': 'kind_'+task+'.5',
-                task+'.6': 'kind_'+task+'.6', 
+                'Создать вариант': f'createvar_{task}',
+                **{f"{task}.{i}": f"kind_{task}.{i}" for i in range(1, 13)},
                 'выход': 'exit'
             },
-            row_widths=[3, 3])
+            row_widths=[1, 4, 4, 4, 1]
+        )
     
     
     
@@ -92,9 +90,10 @@ class MainMenu:
                 '-': 'num_-',
                 '0': 'num_0',
                 '.': 'num_.',
+                'ТЕОРИЯ': 'theory',
                 
             },
-            row_widths=[3, 3, 3, 3])
+            row_widths=[3, 3, 3, 3, 1])
 
     
 
@@ -125,6 +124,36 @@ class MainMenu:
                 "выход": "exit"
             },
             row_widths=[1])
+    
+    @staticmethod
+    def to_back_to_test_kb() -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                "Продолжаем?": "test_"
+            },
+            row_widths=[1])
+    
+
+    @staticmethod
+    def to_back_to_equation_kb() -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                "Продолжаем?": "choo_diff_"
+            },
+            row_widths=[1])
+    
+    @staticmethod
+    def to_make_new_var_kb(task, var) -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                f"Создать вариант {var+1}": f'createvar_{task}',
+                "выход": "OGEexit"
+            },
+            row_widths=[1, 1])
+    
+
+
+
 
     
 
