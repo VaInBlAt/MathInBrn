@@ -31,8 +31,8 @@ def generate_linear_equation(difficulty):
         b = round(b, 2)
     
     equation = f" {a}x + {b} = {answer}"
-    
-    return clear_equation(equation), x
+    description = ''
+    return clear_equation(equation), x, description
 
 
 def generate_quadratic_equation(difficulty):
@@ -56,7 +56,9 @@ def generate_quadratic_equation(difficulty):
 
     equation = rf" {mult}x^2 + {-1*mult*(x1+x2)}x+ {mult*x1*x2} = 0"
     print(equation, mult, x1, x2)
-    return (clear_equation(equation), min(x1, x2))
+    description = ''
+
+    return (clear_equation(equation), min(x1, x2), description)
 
 
 def generate_proportion_equation(difficulty):
@@ -78,7 +80,8 @@ def generate_proportion_equation(difficulty):
     equation = rf" \frac{{{x}}}{{{a}}}=\frac{{x}}{{{round(a*mult, 2)}}}"
 
     print(clear_equation(equation), round(x*mult, 2))
-    return (clear_equation(equation), round(x*mult, 2))
+    description = ''
+    return (clear_equation(equation), round(x*mult, 2), description)
 
 
 def generate_powers_equation(difficulty):
@@ -101,19 +104,30 @@ def generate_powers_equation(difficulty):
     answer = x**2
     
     equation = f"{answer} = x^2"
-    
-    return clear_equation(equation), x
+    description = ''
+
+    return clear_equation(equation), x, description
+
+TASK_HANDLERS = {}
+
+tasks = ["6", "8", "9", "12"]
+subtasks_range = range(1, 13) 
+
+
+for task in tasks:
+    for subtask in subtasks_range:
+        handler_name = f"task_{task}_{subtask}"
+        handler_func = globals().get(handler_name)
+        
+        if handler_func:
+            TASK_HANDLERS[(task, str(subtask))] = handler_func
 
 def generate_OGE_equation(t: str):
-    task, kind = t.split('.')
-    print(f"Генерация задания: задача {task}, тип {kind}")
-
-    if task == '8' and kind == '1':
-        equation, answer = task_8_1()
-    elif task == '8' and kind == '2':
-        equation, answer = task_8_2()
-    else:
-        raise ValueError("Неизвестный тип задания")
-
-    return clear_equation(equation), str(answer)
-
+    task, kind = t.split(".")
+    handler = TASK_HANDLERS.get((task, kind))
+    
+    if not handler:
+        raise ValueError(f"Задание {t} не найдено")
+    
+    equation, answer, description = handler()
+    return clear_equation(equation), str(answer), description
