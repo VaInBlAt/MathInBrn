@@ -111,7 +111,7 @@ def generate_powers_equation(difficulty):
 TASK_HANDLERS = {}
 
 tasks = ["6", "8", "9", "12"]
-subtasks_range = range(1, 13) 
+subtasks_range = range(1, 21) 
 
 
 for task in tasks:

@@ -28,11 +28,14 @@ class States(StatesGroup):
     current_task: Optional[str] = State()
     current_description: Optional[str] = State()
     current_var: Optional[int] = State()
+    cash_tasks: Optional[list] = State()
+    current_task_info: Optional[str] = State()
+
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(
-        "👋 Добро пожаловат!\n🎯 Выберите тему для тренировки:",
+        "👋 Добро пожаловать!\n🎯 Выберите тему для тренировки:",
         reply_markup=MainMenu.to_choo_theme_kb()
     )
 
@@ -58,14 +61,23 @@ async def handle_theme(callback: types.CallbackQuery, state: FSMContext):
 
     await callback.answer()
 
+@router.callback_query(F.data == 'MathInBrain')
+async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
+    await callback.message.edit_text(
+        'Выберите тему',
+        reply_markup=MainMenu.to_choo_MathInBrain_kb()
+    )
+
+
+
 @router.callback_query(F.data.startswith('task_'))
 async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
     task = callback.data.split('_')[-1]
     await state.update_data(current_task=task)
     if task != 'OGE':
         await callback.message.edit_text(
-        f"📋 Задание {task}\nВыберите тип задачи:",
-        reply_markup=MainMenu.to_choo_OGE_kind_kb(task)
+        f"📋 Задание {task}\nВыберите количество заданий в варианте:",
+        reply_markup=MainMenu.to_choo_tasks_amount_kb(task)
     )
     await callback.answer()
 
@@ -370,26 +382,59 @@ async def show_leaderboard(callback: types.CallbackQuery, state: FSMContext):
     
     await callback.answer()
 
+@router.callback_query(F.data.startswith('tasksomunt_'))
+async def handle_OGEexit(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(
+        'Выберите количество заданий',
+        reply_markup=MainMenu.to_choo_tasks_amount_kb())
+    await callback.answer()
 
-@router.callback_query(F.data.startswith('createvar_'))
+
+
+@router.callback_query(F.data.startswith('createvar'))
 async def create_variant(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    var = data.get('current_var', 0)
-    
-    var += 1
-    
-    task_number = callback.data.split('_')[-1]
+    task_number = data.get('current_task')
+    cash_tasks = data.get('cash_tasks', set())
+    var = data.get('current_var', 0) + 1
+    max_attempts = 5
     
     try:
-        image = generate_oge_variant_image(task_number)
-        
-        await callback.message.answer_photo(
-            photo=image,
-            caption=f"📝 Вариант {var} для печати:",
-            reply_markup=MainMenu.to_make_new_var_kb(task_number, var)
-        )
+        # Первая попытка распарсить данные из callback
+        task_info = callback.data
+        _, amount, cols, rows = task_info.split('_')
+    except ValueError:
+        try:
+            # Если ошибка - берем данные из FSM
+            task_info = data['current_task_info']
+            _, amount, cols, rows = task_info.split('_')
+        except (KeyError, ValueError) as e:
+            # Если и в FSM нет данных или они некорректны
+            await callback.answer("⚠️ Ошибка формата заданий")
+            return
 
-        await state.update_data(current_var=var)
+    try:
+        for _ in range(max_attempts):
+            image, formulas = generate_oge_variant_image(task_number, var, int(amount), int(cols), int(rows))
+            
+            if any(formula in cash_tasks for formula in formulas):
+                print(f"Обнаружены дубликаты. Попытка {_+1}/{max_attempts}")
+                continue
 
+            cash_tasks.update(formulas)
+            await state.update_data(
+                current_var=var,
+                cash_tasks=cash_tasks,
+                current_task_info=task_info  # Сохраняем инфо в FSM
+            )
+            
+            await callback.message.answer_photo(
+                photo=image,
+                caption=f"📝 Вариант {var} для печати:",
+                reply_markup=MainMenu.to_make_new_var_kb(task_number, var)
+            )
+            return
+
+        await callback.answer("⚠️ Не удалось создать уникальный вариант")
     except Exception as e:
-        await callback.answer(f"Ошибка генерации: {str(e)}")
+        await callback.answer("⚠️ Произошла ошибка при генерации")

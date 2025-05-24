@@ -22,40 +22,23 @@ class MainMenu:
     def to_choo_theme_kb() -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
             buttons={
+                "ОГЭ": "choo_theme_OGE",
+                "Счёт в уме": 'MathInBrain'
+            },
+            row_widths=[1, 1])
+
+    
+    @staticmethod
+    def to_choo_MathInBrain_kb() -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
                 "линейные": "choo_theme_line",
                 "квадратные": "choo_theme_quadratic",
                 "пропорции": "choo_theme_proportion",
                 "степени": "choo_theme_powers",
-                "ОГЭ": "choo_theme_OGE"
             },
             row_widths=[2, 2, 1])
     
-    @staticmethod
-    def to_choo_OGE_task_kb() -> InlineKeyboardMarkup:
-        return KeyboardBuilder.inline(
-            buttons={
-                "6": "task_6",
-                "8": "task_8",
-                "9": "task_9",
-                "12": "task_12",
-                
-            },
-            row_widths=[2, 2,])
-    
-    @staticmethod
-    def to_choo_OGE_kind_kb(task: str) -> InlineKeyboardMarkup:
-        return KeyboardBuilder.inline(
-            buttons={
-                'Создать вариант': f'createvar_{task}',
-                **{f"{task}.{i}": f"kind_{task}.{i}" for i in range(1, 13)},
-                'выход': 'exit'
-            },
-            row_widths=[1, 4, 4, 4, 1]
-        )
-    
-    
-    
-
 
     @staticmethod
     def to_begin_kb() -> InlineKeyboardMarkup:
@@ -142,6 +125,33 @@ class MainMenu:
             },
             row_widths=[1])
     
+
+    @staticmethod
+    def to_choo_OGE_task_kb() -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                "6": "task_6",
+                "8": "task_8",
+                "9": "task_9",
+                "12": "task_12",
+                
+            },
+            row_widths=[2, 2,])
+
+
+    @staticmethod
+    def to_choo_OGE_kind_kb(task: str) -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                'Создать вариант': f'createvar_{task}',
+                **{f"{task}.{i}": f"kind_{task}.{i}" for i in range(1, 13)},
+                'выход': 'exit'
+            },
+            row_widths=[1, 4, 4, 4, 1]
+        )
+
+
+
     @staticmethod
     def to_make_new_var_kb(task, var) -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
@@ -150,6 +160,26 @@ class MainMenu:
                 "выход": "OGEexit"
             },
             row_widths=[1, 1])
+    
+
+    @staticmethod
+    def to_choo_tasks_amount_kb(task) -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                '2': 'createvar_2_2_1',
+                '3': 'createvar_3_3_1',
+                '4': 'createvar_4_2_2',
+                '5': 'createvar_5_5_1',
+                '6': 'createvar_6_3_2',
+                '8': 'createvar_8_4_2',
+                '9': 'createvar_9_3_3',
+                '10': 'createvar_10_5_2',
+                '12': 'createvar_12_6_2',
+                '14': 'createvar_14_7_2',
+                '15': 'createvar_15_5_3',
+                '20': 'createvar_20_5_4',
+            },
+            row_widths=[4, 4, 4])
     
 
 
