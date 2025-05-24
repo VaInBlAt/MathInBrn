@@ -8,7 +8,7 @@ def gen_int_for_easy():
 
 def task_8_1():
     a = random.choice(list(range(11, 20)))
-    b = a**2 - 1
+    b = random.choice(list(range(226, 256)))
     equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
     answer = 2 * a
     description = 'qwerty'
@@ -47,7 +47,6 @@ def task_8_4():
         a, c = gen_int_for_fraction(), gen_int_for_fraction()
         cmult1, cmult2 = gen_int_for_fraction(), gen_int_for_fraction()
         answer = (cmult1*c)/(a+cmult2*c)
-        print(a, c, cmult1, cmult2, int(answer), answer)
     
     first = f"{cmult1}ac^2"
     second = f"a^2 - {cmult2**2}c^2"
@@ -59,7 +58,7 @@ def task_8_4():
 
 def task_8_5():
     a, b = gen_int_for_easy(), gen_int_for_easy()
-    equation = rf"(\sqrt{{{a}}}+\sqrt{{{b}}})(\sqrt{{{a}}}+\sqrt{{{b}}})" 
+    equation = rf"(\sqrt{{{a}}}+\sqrt{{{b}}})(\sqrt{{{a}}}-\sqrt{{{b}}})" 
     answer = a-b
     description = ''
     return equation, answer, description
@@ -73,7 +72,6 @@ def task_8_6():
         a, c = gen_int_for_fraction(), gen_int_for_fraction()
         cmult1, cmult2 = gen_int_for_fraction(), gen_int_for_fraction()
         answer = a-cmult1*c
-        print(a, c, cmult1, cmult2, int(answer), answer)
     
     first = f"a^2"
     second = f"a^2 + {cmult1}ac"
@@ -121,6 +119,62 @@ def task_8_11():
     description = 'qwerty'
     return equation, answer, description
 def task_8_12():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_13():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_14():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_15():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_16():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_17():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_18():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_19():
+    a = random.choice(list(range(11, 20)))
+    b = a**2 - 1
+    equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
+    answer = 2 * a
+    description = 'qwerty'
+    return equation, answer, description
+def task_8_20():
     a = random.choice(list(range(11, 20)))
     b = a**2 - 1
     equation = f"\\frac{{1}}{{{a} + \\sqrt{{{b}}}}} + \\frac{{1}}{{{a} - \\sqrt{{{b}}}}}" 
