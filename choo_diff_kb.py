@@ -173,11 +173,11 @@ class MainMenu:
                 '6': 'createvar_6_3_2',
                 '8': 'createvar_8_4_2',
                 '9': 'createvar_9_3_3',
-                '10': 'createvar_10_5_2',
-                '12': 'createvar_12_6_2',
-                '14': 'createvar_14_7_2',
-                '15': 'createvar_15_5_3',
-                '20': 'createvar_20_5_4',
+                '10': 'createvar_10_2_5',
+                '12': 'createvar_12_3_4',
+                '14': 'createvar_14_3_5',
+                '15': 'createvar_15_3_5',
+                '20': 'createvar_20_4_5',
             },
             row_widths=[4, 4, 4])
     

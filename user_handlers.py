@@ -9,6 +9,7 @@ from THEORY import materials
 from typing import Optional
 from latexTEST import *
 from time import time
+from docx_generator import create_word_document
 
 router = Router()
 
@@ -30,7 +31,8 @@ class States(StatesGroup):
     current_var: Optional[int] = State()
     cash_tasks: Optional[list] = State()
     current_task_info: Optional[str] = State()
-
+    current_var_list: Optional[list] = State()
+    current_answers_for_all_var: Optional[list] = State()
 
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -310,9 +312,23 @@ async def handle_exit(callback: types.CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith('OGEexit'))
 async def handle_OGEexit(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+
+    image_files = data.get('current_var_list', [])
+    answers_for_all_var = data.get('current_answers_for_all_var')
+    print(answers_for_all_var)
+
+    word_bytes = create_word_document(image_files, answers_for_all_var)
+    word_input_file = BufferedInputFile(
+        file=word_bytes, 
+        filename="Вариант_заданий.docx"
+    )
+
+    await callback.message.answer_document(document=word_input_file)
+    
     await state.clear()
     await callback.message.answer(
-        "👋 Добро пожаловат!\n🎯 Выберите тему для тренировки:",
+        "👋 Добро пожаловать!\n🎯 Выберите тему для тренировки:",
         reply_markup=MainMenu.to_choo_theme_kb()
     )
     await callback.answer()
@@ -398,24 +414,28 @@ async def create_variant(callback: types.CallbackQuery, state: FSMContext):
     cash_tasks = data.get('cash_tasks', set())
     var = data.get('current_var', 0) + 1
     max_attempts = 5
+    var_list = data.get('current_var_list', [])
+    answers_for_all_var = data.get('current_answers_for_all_var', [])
+
+    
     
     try:
-        # Первая попытка распарсить данные из callback
         task_info = callback.data
         _, amount, cols, rows = task_info.split('_')
     except ValueError:
         try:
-            # Если ошибка - берем данные из FSM
             task_info = data['current_task_info']
             _, amount, cols, rows = task_info.split('_')
         except (KeyError, ValueError) as e:
-            # Если и в FSM нет данных или они некорректны
             await callback.answer("⚠️ Ошибка формата заданий")
             return
 
     try:
         for _ in range(max_attempts):
-            image, formulas = generate_oge_variant_image(task_number, var, int(amount), int(cols), int(rows))
+            image, formulas, answers = generate_oge_variant_image(task_number, var, int(amount), int(cols), int(rows))
+            var_list.append(image)
+            print(var_list, answers)
+            answers_for_all_var += [answers]
             
             if any(formula in cash_tasks for formula in formulas):
                 print(f"Обнаружены дубликаты. Попытка {_+1}/{max_attempts}")
@@ -425,7 +445,9 @@ async def create_variant(callback: types.CallbackQuery, state: FSMContext):
             await state.update_data(
                 current_var=var,
                 cash_tasks=cash_tasks,
-                current_task_info=task_info  # Сохраняем инфо в FSM
+                current_task_info=task_info,
+                current_var_list=var_list,
+                current_answers_for_all_var=answers_for_all_var
             )
             
             await callback.message.answer_photo(
