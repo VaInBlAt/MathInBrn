@@ -1,4 +1,5 @@
 from aiogram import Router, types, F
+from aiogram.types import InputMediaDocument
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -10,6 +11,8 @@ from typing import Optional
 from latexTEST import *
 from time import time
 from docx_generator import create_word_document
+from pdf_generator import create_pdf_document
+
 
 router = Router()
 
@@ -316,15 +319,36 @@ async def handle_OGEexit(callback: types.CallbackQuery, state: FSMContext):
 
     image_files = data.get('current_var_list', [])
     answers_for_all_var = data.get('current_answers_for_all_var')
-    print(answers_for_all_var)
+    var_amount = len(data.get('current_answers_for_all_var'))
 
+    if var_amount in [2, 3, 4]:
+        var_text = 'варианта'
+    elif var_amount == 1:
+        var_text = 'вариант'
+    else:
+        var_text = 'вариантов'
+
+    # Создаем документ Word
     word_bytes = create_word_document(image_files, answers_for_all_var)
     word_input_file = BufferedInputFile(
         file=word_bytes, 
-        filename="Вариант_заданий.docx"
+        filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ.docx"
     )
 
-    await callback.message.answer_document(document=word_input_file)
+    # Создаем документ PDF
+    pdf_bytes = create_pdf_document(image_files, answers_for_all_var)
+    pdf_input_file = BufferedInputFile(
+        file=pdf_bytes,  # Исправлено: передаем pdf_bytes, а не word_bytes
+        filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ.pdf"
+    )
+
+    # Создаем медиа-группу с документами
+    media_group = [
+        InputMediaDocument(media=word_input_file),
+        InputMediaDocument(media=pdf_input_file)
+    ]
+    
+    await callback.message.answer_media_group(media=media_group)
     
     await state.clear()
     await callback.message.answer(
