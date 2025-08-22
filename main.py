@@ -11,15 +11,12 @@ async def main():
         token=settings.BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
         ParseMode='HTML')
-    dp = Dispatcher()
     
-    # Регистрация роутеров
+    dp = Dispatcher()
     dp.include_router(user_handlers.router)
 
-    
-    
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(main())
+    asyncio.run(main())  

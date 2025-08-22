@@ -1,5 +1,6 @@
 from .base import KeyboardBuilder
-from aiogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup
+from taskinfo import TASKDISTRIBUTION
 
 class MainMenu:
     
@@ -22,8 +23,8 @@ class MainMenu:
     def to_choo_theme_kb() -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
             buttons={
-                "ОГЭ": "choo_theme_OGE",
-                "Счёт в уме": 'MathInBrain'
+                "Учителю (ОГЭ)": "choo_theme_OGE",
+                "Ученику": 'MathInBrain'
             },
             row_widths=[1, 1])
 
@@ -131,12 +132,28 @@ class MainMenu:
         return KeyboardBuilder.inline(
             buttons={
                 "6": "task_6",
+                "7": "task_7",
                 "8": "task_8",
                 "9": "task_9",
+                "10": "task_10",
+                "11": "task_11",
                 "12": "task_12",
+                "13": "task_13",
+                "14": "task_14",
+                "15": "task_15",
+                "16": "task_16",
+                "17": "task_17",
+                "18": "task_18",
+                "19": "task_19",
+                "20": "task_20",
+                "21": "task_21",
+                "22": "task_22",
+                "23": "task_23",
+                "24": "task_24",
+                "25": "task_25",
                 
             },
-            row_widths=[2, 2,])
+            row_widths=[5, 5, 5])
 
 
     @staticmethod
@@ -145,7 +162,7 @@ class MainMenu:
             buttons={
                 'Создать вариант': f'createvar_{task}',
                 **{f"{task}.{i}": f"kind_{task}.{i}" for i in range(1, 13)},
-                'выход': 'exit'
+                'Печать': 'exit'
             },
             row_widths=[1, 4, 4, 4, 1]
         )
@@ -157,36 +174,42 @@ class MainMenu:
         return KeyboardBuilder.inline(
             buttons={
                 f"Создать вариант {var+1}": f'createvar_{task}',
-                "выход": "OGEexit"
+                "Печать": "OGEexit"
             },
-            row_widths=[1, 1])
+            row_widths=[1, 1]) if var < 4 else KeyboardBuilder.inline(
+            buttons={
+                "Печать": "OGEexit"
+            },
+            row_widths=[1])
     
 
     @staticmethod
-    def to_choo_tasks_amount_kb(task) -> InlineKeyboardMarkup:
+    def to_choo_tasks_amount_kb(task, taskamount) -> InlineKeyboardMarkup:
+
+
+        buttons = {
+            str(i): f'createvar_{i}_{i}_1' 
+            for i in range(2, int(taskamount + 1))
+        }
+        
+        row_width = TASKDISTRIBUTION[int(task)]
+        row_widths = [row_width] * row_width
+        if len(buttons) % row_width != 0:
+            row_widths.append(len(buttons) % row_width)
+        
+        return KeyboardBuilder.inline(
+            buttons=buttons,
+            row_widths=row_widths
+        )
+    
+
+    @staticmethod
+    def to_choo_pagesize() -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
             buttons={
-                '2': 'createvar_2_2_1',
-                '3': 'createvar_3_3_1',
-                '4': 'createvar_4_2_2',
-                '5': 'createvar_5_5_1',
-                '6': 'createvar_6_3_2',
-                '8': 'createvar_8_4_2',
-                '9': 'createvar_9_3_3',
-                '10': 'createvar_10_2_5',
-                '12': 'createvar_12_3_4',
-                '14': 'createvar_14_3_5',
-                '15': 'createvar_15_3_5',
-                '20': 'createvar_20_4_5',
+                'А4': 'pagesize_4',
+                'А5': 'pagesize_5'
             },
             row_widths=[4, 4, 4])
     
 
-
-
-
-    
-
-    
-    
-    

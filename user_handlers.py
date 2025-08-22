@@ -4,14 +4,17 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from keyboards.choo_diff_kb import MainMenu
+from taskinfo import TASKAMOUNT, TASKPERPAGE
 from TASKS import *
 from JSONfunctions import *
 from THEORY import materials
 from typing import Optional
 from latexTEST import *
 from time import time
-from docx_generator import create_word_document
-from pdf_generator import create_pdf_document
+from docx_generator import *
+from pdf_generator import *
+import traceback
+
 
 
 router = Router()
@@ -36,11 +39,18 @@ class States(StatesGroup):
     current_task_info: Optional[str] = State()
     current_var_list: Optional[list] = State()
     current_answers_for_all_var: Optional[list] = State()
+    current_order_in_var: Optional[list] = State()
+    is_A4: Optional[bool] = State()
+    current_task_order: Optional[list[int]] = State()
+    current_task_order_index: Optional[int] = State()
+    current_OGE_task: Optional[int] = State()
+
 
 @router.message(Command("start"))
-async def cmd_start(message: types.Message):
+async def cmd_start(message: types.Message, state: FSMContext):
+    await state.clear()
     await message.answer(
-        "👋 Добро пожаловать!\n🎯 Выберите тему для тренировки:",
+        "👋 Добро пожаловать!",
         reply_markup=MainMenu.to_choo_theme_kb()
     )
 
@@ -76,14 +86,15 @@ async def handle_theme(callback: types.CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data.startswith('task_'))
-async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
+async def handle_theme(callback: types.CallbackQuery, state: FSMContext):
     task = callback.data.split('_')[-1]
     await state.update_data(current_task=task)
     if task != 'OGE':
         await callback.message.edit_text(
-        f"📋 Задание {task}\nВыберите количество заданий в варианте:",
-        reply_markup=MainMenu.to_choo_tasks_amount_kb(task)
+        f"📋 Задание {task}\nВыберите количество заданий в варианте:\nмаксимум заданий на листе: {TASKPERPAGE[int(task)]}\nмаксимум заданий в варианте: {TASKAMOUNT[int(task)]}",
+        reply_markup=MainMenu.to_choo_tasks_amount_kb(task, TASKAMOUNT[int(task)])
     )
+
     await callback.answer()
 
 @router.callback_query(F.data.startswith('kind_'))
@@ -308,18 +319,29 @@ async def handle_exit(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.delete()
     await callback.message.answer(
-        "👋 Добро пожаловат!\n🎯 Выберите тему для тренировки:",
+        "👋 Добро пожаловать!",
         reply_markup=MainMenu.to_choo_theme_kb()
     )
     await callback.answer()
 
 @router.callback_query(F.data.startswith('OGEexit'))
-async def handle_OGEexit(callback: types.CallbackQuery, state: FSMContext):
-    data = await state.get_data()
+async def handle_OGEexit(callback: types.CallbackQuery):
+    await callback.message.answer(
+        "Выберите вариант печати:",
+        reply_markup=MainMenu.to_choo_pagesize()
+    )
+    await callback.answer()
 
+@router.callback_query(F.data.startswith('pagesize'))
+async def handle_pagesize(callback: types.CallbackQuery, state: FSMContext):
+    wait_message = await callback.message.answer("🔄 Генерирую WORD и PDF файлы для печати...")
+    
+    data = await state.get_data()
+    pagesize = callback.data.split('_')[-1]
     image_files = data.get('current_var_list', [])
     answers_for_all_var = data.get('current_answers_for_all_var')
     var_amount = len(data.get('current_answers_for_all_var'))
+    print(pagesize)
 
     if var_amount in [2, 3, 4]:
         var_text = 'варианта'
@@ -328,21 +350,33 @@ async def handle_OGEexit(callback: types.CallbackQuery, state: FSMContext):
     else:
         var_text = 'вариантов'
 
-    # Создаем документ Word
-    word_bytes = create_word_document(image_files, answers_for_all_var)
-    word_input_file = BufferedInputFile(
-        file=word_bytes, 
-        filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ.docx"
-    )
+    if pagesize == '5':
+        word_bytes = create_two_vertical_A5_variants(image_files, answers_for_all_var)
+        word_input_file = BufferedInputFile(
+            file=word_bytes, 
+            filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ A5.docx"
+        )
 
-    # Создаем документ PDF
-    pdf_bytes = create_pdf_document(image_files, answers_for_all_var)
-    pdf_input_file = BufferedInputFile(
-        file=pdf_bytes,  # Исправлено: передаем pdf_bytes, а не word_bytes
-        filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ.pdf"
-    )
+        pdf_bytes = create_two_vertical_A5_variants_pdf(image_files, answers_for_all_var)
+        pdf_input_file = BufferedInputFile(
+            file=pdf_bytes, 
+            filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ A5.pdf"
+        )
+    else:
+        word_bytes = create_word_document(image_files, answers_for_all_var)
+        word_input_file = BufferedInputFile(
+            file=word_bytes, 
+            filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ А4.docx"
+        )
 
-    # Создаем медиа-группу с документами
+        pdf_bytes = create_pdf_document(image_files, answers_for_all_var)
+        pdf_input_file = BufferedInputFile(
+            file=pdf_bytes,
+            filename=f"{var_amount} {var_text} {data.get('current_task')} задания ОГЭ А4.pdf"
+        )
+
+    await wait_message.delete()
+
     media_group = [
         InputMediaDocument(media=word_input_file),
         InputMediaDocument(media=pdf_input_file)
@@ -351,11 +385,12 @@ async def handle_OGEexit(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.answer_media_group(media=media_group)
     
     await state.clear()
+
     await callback.message.answer(
-        "👋 Добро пожаловать!\n🎯 Выберите тему для тренировки:",
+        "👋 Добро пожаловать!",
         reply_markup=MainMenu.to_choo_theme_kb()
     )
-    await callback.answer()
+
 
 @router.callback_query(F.data.startswith('top'))
 async def show_leaderboard(callback: types.CallbackQuery, state: FSMContext):
@@ -369,7 +404,7 @@ async def show_leaderboard(callback: types.CallbackQuery, state: FSMContext):
     )
     await callback.answer()
 
-async def send_leaderboard(callback: types.CallbackQuery, state: FSMContext) -> str:
+async def send_leaderboard(state: FSMContext) -> str:
     data = await state.get_data()
     users_data = load_json_data(data.get('current_theme'))
     sorted_users = sorted(
@@ -423,16 +458,17 @@ async def show_leaderboard(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 @router.callback_query(F.data.startswith('tasksomunt_'))
-async def handle_OGEexit(callback: types.CallbackQuery, state: FSMContext):
+async def handle_OGEexit(callback: types.CallbackQuery):
     await callback.message.edit_text(
         'Выберите количество заданий',
         reply_markup=MainMenu.to_choo_tasks_amount_kb())
     await callback.answer()
 
 
-
 @router.callback_query(F.data.startswith('createvar'))
 async def create_variant(callback: types.CallbackQuery, state: FSMContext):
+    wait_message = await callback.message.answer("🔄 Генерирую вариант, пожалуйста, подождите...")
+    
     data = await state.get_data()
     task_number = data.get('current_task')
     cash_tasks = data.get('cash_tasks', set())
@@ -440,8 +476,13 @@ async def create_variant(callback: types.CallbackQuery, state: FSMContext):
     max_attempts = 5
     var_list = data.get('current_var_list', [])
     answers_for_all_var = data.get('current_answers_for_all_var', [])
-
+    order_in_var = data.get('current_order_in_var', [])
     
+    default_order = [0, 1, 2, 3]
+    random.shuffle(default_order)
+    task_order = data.get('current_task_order', default_order)
+    
+    task_order_index = data.get('current_task_order_index', 0)
     
     try:
         task_info = callback.data
@@ -452,18 +493,36 @@ async def create_variant(callback: types.CallbackQuery, state: FSMContext):
             _, amount, cols, rows = task_info.split('_')
         except (KeyError, ValueError) as e:
             await callback.answer("⚠️ Ошибка формата заданий")
+            await wait_message.delete()
             return
 
     try:
+        if not order_in_var:
+            numbers = list(range(1, TASKAMOUNT[int(task_number)]+1))
+            if task_number == '19':
+                numbers = list(range(1, 61, 4))
+            random.shuffle(numbers)
+            order_in_var = numbers[:int(amount)]
+            print(order_in_var)
+
         for _ in range(max_attempts):
-            image, formulas, answers = generate_oge_variant_image(task_number, var, int(amount), int(cols), int(rows))
-            var_list.append(image)
-            print(var_list, answers)
-            answers_for_all_var += [answers]
+            pages, formulas, answers = generate_oge_variant_image(
+                task_number,
+                var,
+                int(amount),
+                int(cols),
+                int(rows),
+                order_in_var,
+                task_order,
+                task_order_index)
             
             if any(formula in cash_tasks for formula in formulas):
                 print(f"Обнаружены дубликаты. Попытка {_+1}/{max_attempts}")
                 continue
+
+            var_list.extend(pages)
+            answers_for_all_var.append(answers)
+            task_order_index += 1
 
             cash_tasks.update(formulas)
             await state.update_data(
@@ -471,16 +530,36 @@ async def create_variant(callback: types.CallbackQuery, state: FSMContext):
                 cash_tasks=cash_tasks,
                 current_task_info=task_info,
                 current_var_list=var_list,
-                current_answers_for_all_var=answers_for_all_var
+                current_answers_for_all_var=answers_for_all_var,
+                current_order_in_var=order_in_var,
+                current_task_order=task_order,
+                current_task_order_index=task_order_index
             )
             
-            await callback.message.answer_photo(
-                photo=image,
-                caption=f"📝 Вариант {var} для печати:",
+            await wait_message.delete()
+            
+            media_group = []
+            for i, page in enumerate(pages):
+                if i == 0:
+                    media_group.append(types.InputMediaPhoto(
+                        media=page,
+                        caption=f"📝 Вариант {var} для печати:"
+                    ))
+                else:
+                    media_group.append(types.InputMediaPhoto(media=page))
+            
+            await callback.message.answer_media_group(media_group)
+            
+            await callback.message.answer(
+                text=f"Вариант {var} готов!",
                 reply_markup=MainMenu.to_make_new_var_kb(task_number, var)
             )
             return
 
         await callback.answer("⚠️ Не удалось создать уникальный вариант")
+        await wait_message.delete()
     except Exception as e:
         await callback.answer("⚠️ Произошла ошибка при генерации")
+        await wait_message.delete()
+        error_trace = traceback.format_exc()
+        print(error_trace)

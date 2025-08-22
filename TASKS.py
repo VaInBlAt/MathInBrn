@@ -1,6 +1,8 @@
 import random
 
-from OGEtasks.task8 import *
+from answers import ANSWERS
+
+
 
 def clear_equation(formula: str):
     return formula.replace('+ -', '-').replace('.1x', '.1 1x').replace(' 1x', 'x').replace('+ 0x', '').replace('+ 0', '').replace(' ' , '')
@@ -108,26 +110,22 @@ def generate_powers_equation(difficulty):
 
     return clear_equation(equation), x, description
 
-TASK_HANDLERS = {}
 
-tasks = ["6", "8", "9", "12"]
-subtasks_range = range(1, 21) 
-
-
-for task in tasks:
-    for subtask in subtasks_range:
-        handler_name = f"task_{task}_{subtask}"
-        handler_func = globals().get(handler_name)
-        
-        if handler_func:
-            TASK_HANDLERS[(task, str(subtask))] = handler_func
-
-def generate_OGE_equation(t: str):
+def generate_OGE_equation(t: str, task_order, task_order_index, i):
     task, kind = t.split(".")
-    handler = TASK_HANDLERS.get((task, kind))
-    
-    if not handler:
-        raise ValueError(f"Задание {t} не найдено")
-    
-    equation, answer, description = handler()
-    return clear_equation(equation), str(answer), description
+    x = task_order[task_order_index]
+    folder = f'{task}.{kind}'
+    file = f'{x + 1}'
+
+    if task == '19':
+        if int(i) % 2 == 0:
+            folder = f'{task}.1'
+            file = f'{int(kind)+x}'
+
+        else:
+            folder = f'{task}.2' 
+            file = f'{int(kind)+x}'
+
+    answer = ANSWERS[f'{folder}.{file}'] if task != '24' else '-'
+
+    return f'./taskimg/{folder}/{folder}.{file}.jpg', answer , f'{folder}.{file}'
