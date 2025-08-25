@@ -128,4 +128,4 @@ def generate_OGE_equation(t: str, task_order, task_order_index, i):
 
     answer = ANSWERS[f'{folder}.{file}'] if task != '24' else '-'
 
-    return f'./taskimg/{folder}/{folder}.{file}.jpg', answer , f'{folder}.{file}'
+    return f'./ogetaskimg/{folder}/{folder}.{file}.jpg', answer , f'{folder}.{file}'

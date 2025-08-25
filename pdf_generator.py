@@ -6,7 +6,8 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from reportlab.platypus import Table, TableStyle
+from reportlab.platypus import Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import io
 from typing import List
 
@@ -97,6 +98,21 @@ def create_pdf_document(
         y_table = (height - table_height) / 2
         table.drawOn(pdf, x_table, y_table)
         
+        # Добавляем текст в конец страницы с ответами
+        footer_text = (
+            'Все задания взяты из сборника © А.Д. Остромогильский, 2025.\n\n'
+            'Сборник составлен на основе открытого банка задач ФГБНУ «ФИПИ».\n\n'
+            'Оригинальный сборник и другие материалы: https://vk.com/math_start\n\n'
+            'Данный бот является некоммерческим учебным проектом. Я, Вайнблат Семён, не являюсь составителем заданий'
+        )
+        
+        pdf.setFont(font_name, 8)
+        text_object = pdf.beginText(20 * mm, 40 * mm)
+        text_object.setFont(font_name, 8)
+        text_object.setTextOrigin(20 * mm, 40 * mm)
+        text_object.textLines(footer_text)
+        pdf.drawText(text_object)
+        
         pdf.showPage()
 
     pdf.save()
@@ -183,6 +199,21 @@ def create_two_vertical_A5_variants_pdf(
         x_table = (width - table_width) / 2
         y_table = (height - table_height) / 2 - 25 * mm
         table.drawOn(pdf, x_table, y_table)
+        
+        # Добавляем текст в конец страницы с ответами
+        footer_text = (
+            'Все задания взяты из сборника © А.Д. Остромогильский, 2025.\n\n'
+            'Сборник составлен на основе открытого банка задач ФГБНУ «ФИПИ».\n\n'
+            'Оригинальный сборник и другие материалы: https://vk.com/math_start\n\n'
+            'Данный бот является некоммерческим учебным проектом. Я, Вайнблат Семён, не являюсь составителем заданий'
+        )
+        
+        pdf.setFont(font_name, 8)
+        text_object = pdf.beginText(20 * mm, 40 * mm)
+        text_object.setFont(font_name, 8)
+        text_object.setTextOrigin(20 * mm, 40 * mm)
+        text_object.textLines(footer_text)
+        pdf.drawText(text_object)
 
     pdf.save()
     buffer.seek(0)

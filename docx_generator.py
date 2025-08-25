@@ -68,6 +68,7 @@ def create_word_document(
 
     hdr_cells = table.rows[0].cells
     hdr_cells[0].text = '№'
+    hdr_cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
     for col_idx, variant_num in enumerate(range(1, len(answers) + 1), 1):
         hdr_cells[col_idx].text = f'Вар. {variant_num}'
         hdr_cells[col_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -81,6 +82,19 @@ def create_word_document(
             cell = row_cells[variant_idx + 1]
             cell.text = answers[variant_idx][task_idx]
             cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Добавляем текст в конец страницы с ответами
+    if answers:
+        doc.add_paragraph()
+        footer_paragraph = doc.add_paragraph()
+        footer_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        footer_run = footer_paragraph.add_run(
+            'Все задания взяты из сборника © А.Д. Остромогильский, 2025.\n\n'
+            'Сборник составлен на основе открытого банка задач ФГБНУ «ФИПИ».\n\n'
+            'Оригинальный сборник и другие материалы: https://vk.com/math_start\n\n'
+            'Данный бот является некоммерческим учебным проектом. Я, Вайнблат Семён, не являюсь составителем заданий'
+        )
+        footer_run.font.size = Mm(3)
 
     doc_bytes = io.BytesIO()
     doc.save(doc_bytes)
@@ -168,6 +182,7 @@ def create_two_vertical_A5_variants(
 
     hdr_cells = table.rows[0].cells
     hdr_cells[0].text = '№'
+    hdr_cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
     for col_idx, variant_num in enumerate(range(1, len(answers) + 1), 1):
         hdr_cells[col_idx].text = f'Вар. {variant_num}'
         hdr_cells[col_idx].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -182,6 +197,19 @@ def create_two_vertical_A5_variants(
             cell = row_cells[variant_idx + 1]
             cell.text = answers[variant_idx][task_idx]
             cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Добавляем текст в конец страницы с ответами
+    if answers:
+        doc.add_paragraph()
+        footer_paragraph = doc.add_paragraph()
+        footer_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        footer_run = footer_paragraph.add_run(
+            'Все задания взяты из сборника © А.Д. Остромогильский, 2025.\n\n'
+            'Сборник составлен на основе открытого банка задач ФГБНУ «ФИПИ».\n\n'
+            'Оригинальный сборник и другие материалы: https://vk.com/math_start\n\n'
+            'Данный бот является некоммерческим учебным проектом. Я, Вайнблат Семён, не являюсь составителем заданий'
+        )
+        footer_run.font.size = Mm(3)
 
     doc_bytes = io.BytesIO()
     doc.save(doc_bytes)

@@ -3,7 +3,7 @@ from aiogram.types import InputMediaDocument
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from keyboards.choo_diff_kb import MainMenu
+from choo_diff_kb import MainMenu
 from taskinfo import TASKAMOUNT, TASKPERPAGE
 from TASKS import *
 from JSONfunctions import *
@@ -54,6 +54,49 @@ async def cmd_start(message: types.Message, state: FSMContext):
         reply_markup=MainMenu.to_choo_theme_kb()
     )
 
+@router.message(Command("info"))
+async def cmd_start(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.answer(
+        '''📚 Об этом боте и источниках заданий
+
+-Все задания, которые использует этот бот, взяты из бесплатного сборника Аркадия Дмитриевича Остромогильского.
+
+-Сборник создан на основе открытого банка заданий ФИПИ.
+
+-Оригинальный сборник и другие полезные материалы вы можете найти в группе составителя ВКонтакте: https://vk.com/math_start
+
+-Я, Вайнблат Семён, являюсь только разработчиком этого бота-помощника. Я не имею никакого отношения к составлению этих заданий.
+
+-Этот некоммерческий проект создан в учебных целях для удобства подготовки к ОГЭ по математике.''',
+        reply_markup=MainMenu.to_exit_kb()
+    )
+
+
+@router.callback_query(F.data.startswith('teacher'))
+async def handle_ekz(callback: types.CallbackQuery): 
+    await callback.message.edit_text(
+        f"📚 Выберите Экзамен:",
+        reply_markup=MainMenu.to_choo_ekz_kb()
+    )
+
+@router.callback_query(F.data.startswith('ekz'))
+async def handle_ekz(callback: types.CallbackQuery, state: FSMContext): 
+    ekz = callback.data.split('_')[-1]
+    await state.update_data(current_theme=ekz)
+    if ekz == 'OGE':
+        await callback.message.edit_text(
+            f"📚 Выберите задание ОГЭ:",
+            reply_markup=MainMenu.to_choo_OGE_task_kb())
+    else:
+        await callback.message.edit_text(
+            f"📚 Выберите задание ЕГЭ:",
+            reply_markup=MainMenu.to_choo_OGE_task_kb())
+        
+    await callback.answer()
+    
+
+
 @router.callback_query(F.data.startswith('choo_theme_'))
 async def handle_theme(callback: types.CallbackQuery, state: FSMContext): 
     theme = callback.data.split('_')[-1]
@@ -69,10 +112,6 @@ async def handle_theme(callback: types.CallbackQuery, state: FSMContext):
         "🏆 Результаты теста попадают в таблицу лидеров!",
         reply_markup=MainMenu.to_choo_diff_kb()
     )
-    else:
-        await callback.message.edit_text(
-        f"📚 Выберите задание ОГЭ:",
-        reply_markup=MainMenu.to_choo_OGE_task_kb())
 
     await callback.answer()
 

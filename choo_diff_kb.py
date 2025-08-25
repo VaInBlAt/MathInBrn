@@ -1,4 +1,4 @@
-from .base import KeyboardBuilder
+from base import KeyboardBuilder
 from aiogram.types import InlineKeyboardMarkup
 from taskinfo import TASKDISTRIBUTION
 
@@ -23,10 +23,20 @@ class MainMenu:
     def to_choo_theme_kb() -> InlineKeyboardMarkup:
         return KeyboardBuilder.inline(
             buttons={
-                "Учителю (ОГЭ)": "choo_theme_OGE",
+                "Учителю": "ekz_OGE", #временно, клавиатура to_choo_ekz_kb срабывает через teacher
                 "Ученику": 'MathInBrain'
             },
             row_widths=[1, 1])
+    
+    @staticmethod
+    def to_choo_ekz_kb() -> InlineKeyboardMarkup:
+        return KeyboardBuilder.inline(
+            buttons={
+                "ОГЭ": "ekz_OGE"
+            },
+            row_widths=[1, 1])
+    
+    
 
     
     @staticmethod

@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from config import settings
-from handlers import user_handlers
+import user_handlers
  
 async def main():
     bot = Bot(
